@@ -1,0 +1,3 @@
+kprobe:vfs_read {
+	@[comm] = count();
+}

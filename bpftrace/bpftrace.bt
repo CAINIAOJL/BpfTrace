@@ -1,0 +1,7 @@
+BEGIN{
+    printf("begin trace in tracepoint : syscalls::sys_enter_open\n")
+}
+
+tracepoint:syscalls:sys_enter_open {
+    printf("%s %s\n", comm, str(args->filename)); 
+}

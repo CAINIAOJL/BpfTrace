@@ -1,0 +1,76 @@
+/*
+kprobe /pid=122/:vfs_read
+{
+    //@为全局变量
+    //$为临时变量
+    @start[tid] = nsecs;
+}
+
+kretprobe /pid=123/:vfs_read
+{
+    $duration_us = (nsecs - @start[tid]) / 1000;
+    @us[pid, comm] = hist($duration_us);
+    delete(@start[tid]);
+}
+*/
+//t:tracepoint
+/*
+内置变量
+pid,tid,username,nsecs,elapsed,cpu,
+comm,kstack,ustack,arg0,.....,argN
+args,retval,func,probe,curtask,cgroup,$1,$2....$N
+*/
+
+/*
+t:syscalls:sys_enter_setuid
+{
+    printf("setuid by PID %d (%s), UID %d\n", pid, comm, uid);
+}
+*/
+/*t:block:block_rq_insert
+{
+    //printf("Block I/O by %s\n", kstack)
+    @[kstack] = count();
+}*/
+
+/*BEGIN
+{
+    printf("connect by pid = %d\n", $1);
+}
+t:syscalls:sys_enter_connect
+/pid == $1/ //过滤器
+{
+    printf("connect by pid = %d\n", $1);
+}*/
+
+
+
+// 跟踪 execve 系统调用
+/*
+tracepoint:syscalls:sys_enter_execve
+{
+    // 使用 join 函数将命令行参数连接成一个字符串
+    printf("Command: %s\n", join(args->argv));
+}
+
+
+uretprobe:/bin/bash:readline
+{
+    printf("%s \n", str(retval))
+}
+
+t:block:block_rq_insert
+{
+    @[kstack(3), comm] = count();
+}
+
+k:ktime_get
+{
+    printf("%s", ustack(perf))
+}
+
+t:timer:hrtimer_start
+{
+    @[ksym(args->function)] = count();
+}*/
+
