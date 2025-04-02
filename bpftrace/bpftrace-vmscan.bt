@@ -1,0 +1,68 @@
+t:vmscan:mm_shrink_slab_start
+{
+    @start_ss[tid] = nsecs;
+}
+t:vmscan:mm_shrink_slab_end
+/@start_ss[tid]/
+{
+    $dur_ss = nsecs - @start_ss[tid];
+    @sum_ss = @sum_ss + $dur_ss; //统计sum时间
+    @shrink_slab_ns = hist($dur_ss);
+    delete(@start_ss[tid]);
+}
+
+t:vmscan:mm_vmscan_direct_reclaim_begin
+{
+    @start_dr[tid] = nsecs;
+}
+t:vmscan:mm_vmscan_direct_reclaim_end
+/@start_dr[tid]/
+{
+    $dur_dr = nsecs - @start_dr[tid];
+    @sum_dr = @sum_dr + $dur_dr;
+    @direct_reclaim_ns = hist($dur_dr);
+    delete(@start_dr[tid]);
+}
+
+t:vmscan:mm_vmscan_memcg_reclaim_begin
+{
+    @start_mr[tid] = nsecs;
+}
+t:vmscan:mm_vmscan_memcg_reclaim_end
+/@start_mr[tid]/
+{
+    $dur_mr = nsecs - @start_mr[tid];
+    @sum_mr = @sum_mr + $dur_mr;
+    @memcg_reclaim_ns = hist($dur_mr);
+    delete(@start_mr[tid]);
+}
+
+t:vmscan:mm_vmscan_wakeup_kswapd
+{
+    @count_wk++;
+}
+/*
+t:vmscan:mm_vmscan_writepage
+{
+    @count_wp++;
+}
+*/
+BEGIN
+{
+    printf("%-10s %10s %12s %12s %6s\n", "TIME", "S-SLABms", "D-RECLAIMms", "M-RECLAIMms", "KSWAPD");
+}
+
+interval:s:1
+{
+    $cnt = 1;
+    if ($cnt / 21 != 0) {
+        printf("%-10s %10s %12s %12s %6s\n", "TIME", "S-SLABms", "D-RECLAIMms", "M-RECLAIMms", "KSWAPD");
+    }
+    time("%H:%M:%s");
+    printf("    %10d %12d %12d %6d\n", @sum_ss / 1000000, @sum_dr / 1000000, @sum_mr / 1000000, @count_wk);
+    $cnt++;
+    clear(@sum_dr);
+    clear(@sum_mr);
+    clear(@sum_ss);
+    clear(@count_wk);
+}

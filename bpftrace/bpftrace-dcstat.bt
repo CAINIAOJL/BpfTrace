@@ -1,0 +1,28 @@
+BEGIN
+{
+    printf("Tracing dcache lookups... Hit Ctrl-C to end.\n");
+    printf("%10s %10s %5s\n", "REFS", "MISSES", "HIT%");
+}
+k:lookup_fast
+{
+    @hits++;
+}
+kr:d_lookup
+/retval == 0/ //返回值为0,表示miss
+{
+    @misses++;
+}
+interval:s:1
+{
+    $refs = @hits + @misses;
+    $percent = $refs > 0 ? 100 * @hits / $refs : 0; //百分比
+    printf("%10d %10d %4d%%\n", $refs, @misses, $percent);
+    clear(@hits);
+    clear(@misses);
+}
+
+END
+{
+    clear(@hits);
+    clear(@misses);
+}

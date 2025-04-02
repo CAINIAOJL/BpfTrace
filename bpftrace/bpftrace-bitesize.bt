@@ -1,0 +1,14 @@
+BEGIN
+{
+    printf("Tracing block device I/O... Ctrl-C to end.\n");
+}
+
+t:block:block_rq_issue
+{
+    @[args->comm] = hist(args->bytes);
+}
+
+END
+{
+    "\nI/O size (bytes) histogram by process name";
+}

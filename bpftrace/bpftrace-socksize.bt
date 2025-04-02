@@ -1,0 +1,24 @@
+#include <linux/fs.h>
+#include <net/sock.h>
+
+k:sock_recvmsg,
+k:sock_sendmsg
+{
+    @socket[tid] = arg0;
+}
+
+kr:sock_recvmsg
+{
+    if(retval < 0x7ffffff) {
+        @read_bytes[comm] = hist(retval);
+    }
+    delete(@socket[tid]);
+}
+
+kr:sock_sendmsg
+{
+    if(retval < 0x7ffffff) {
+        @send_bytes[comm] = hist(retval);
+    }
+    delete(@socket[tid]);
+}

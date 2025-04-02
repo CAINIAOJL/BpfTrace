@@ -1,0 +1,15 @@
+#include <linux/oom.h>
+
+BEGIN
+{
+    printf("Tracing oom_kill_process()... Hit Ctr-C to end\n");
+}
+
+k:oom_kill_process
+{
+    @oc = (struct oom_control*)arg1;
+    time("%H:%M:%S ");
+    printf("Triggered by PID %d (\"%s\"), ", pid, comm);
+    printf("oom kill of PID %d (\"%s\"), %d pages, loadavg:", $oc->chosen->pid, $oc->chosen->comm, $oc->totalpages);
+    cat("/proc/loadavg");
+}

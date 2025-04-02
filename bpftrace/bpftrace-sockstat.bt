@@ -1,0 +1,21 @@
+BEGIN
+{
+    printf("Tracing sock statistics. Output every 1 second.\n");
+}
+
+t:syscalls:sys_enter_accept*,
+t:syscalls:sys_enter_connect*,
+t:syscalls:sys_enter_bind*,
+t:syscalls:sys_enter_socket*,
+k:sock_recvmsg,
+k:sock_sendmsg
+{
+    @[probe] = count();
+}
+
+interval:s:1
+{
+    time();
+    print(@);
+    clear(@);
+}

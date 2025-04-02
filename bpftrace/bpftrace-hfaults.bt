@@ -1,0 +1,8 @@
+BEGIN
+{
+    printf("Tracing Huge Page faults per proecess... Hit Ctr-C to end.\n");
+}
+k:hugetlb_fault
+{
+    @[pid, comm] = count();
+}

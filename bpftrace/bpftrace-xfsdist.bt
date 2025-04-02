@@ -1,0 +1,24 @@
+BEGIN
+{
+    printf("Tracing XFS operation latency... Hit Ctrl-C to end.\n");
+}
+
+k:xfs_file_read_iter,
+k:xfs_file_write_iter,
+k:xfs_file_open,
+k:xfs_file_fsync
+{
+    @start[tid] = nsecs;
+    @name[tid] = func;
+}
+
+kr:xfs_file_read_iter,
+kr:xfs_file_write_iter,
+kr:xfs_file_open,
+kr:xfs_file_fsync
+/@start[tid]/
+{
+    @us[@name[tid]] = hist(nsecs - @start[tid] / 1000);
+    delete(@start[tid]);
+    delete(@name[tid]);
+}

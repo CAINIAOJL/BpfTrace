@@ -1,0 +1,19 @@
+#include <linux/skbuff.h>
+#include <linux/ip.h>
+
+BEGIN
+{
+    printf("Tracing inbound IPV4 ECN Congestion Encountered.  ");
+    printf("Hit Ctrl-C to end.\n");
+}
+
+k:ip_rcv
+{
+    $skb = (struct sk_buff *)arg0;
+    $iph = (struct iphdr *)($skb->head + $skb->network_header); 
+
+    if(($iph->tos & 3) == 3) {
+        time("%H:%M:%S  ");
+        printf("ECN CE from: %s\n", ntop($iph->saddr));
+    }
+}

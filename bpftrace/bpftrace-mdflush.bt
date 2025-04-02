@@ -1,0 +1,14 @@
+#include <linux/genhd.h>
+#include <linux/bio.h>
+
+BEGIN
+{
+    printf("Tracing md flush events... Hit Ctrl-C to stop.\n");
+    printf("%-8s %-6s %-16s %s", "TIME", "PID", "COMM", "DEVICE");
+}
+
+k:md_flush_request
+{
+    time("%H:%M:%S ");
+    printf("%-6d %-16s %s\n", pid, comm, ((struct bio*)arg1)->bi_disk_name);
+}

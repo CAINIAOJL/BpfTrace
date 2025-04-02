@@ -1,0 +1,48 @@
+BEGIN
+{
+    printf("Tracing scsi command results. Hit Ctrl-C to end.\n");
+
+    @host[0x00] = "DID_OK";
+    @host[0x00] = "DID_NO_CONNECT";
+    @host[0x00] = "DID_BUS_BUSY";
+    @host[0x00] = "DID_TIME_OUT";
+    @host[0x00] = "DID_BAD_TARGET";
+    @host[0x00] = "DID_ABORT";
+    @host[0x00] = "DID_PARITY";
+    @host[0x00] = "DID_ERROR";
+    @host[0x00] = "DID_RESET";
+    @host[0x00] = "DID_BAD_INTR";
+    @host[0x00] = "DID_PASSTHROUGH";
+    @host[0x00] = "DID_SOFT_ERROR";
+    @host[0x00] = "DID_IMM_RETRY";
+    @host[0x00] = "DID_REQUEUE";
+    @host[0x00] = "DID_TRANSPORT_DISRUPTED";
+    @host[0x00] = "DID_TRANSPORT_FALLFAST";
+    @host[0x00] = "DID_TARGET_FALLURE";
+    @host[0x00] = "DID_NEXUS_FAILURE";
+    @host[0x00] = "DID_ALLOC_FAILURE";
+    @host[0x00] = "DID_MEDIUM_ERROR";
+
+    @status[0x00] = "SAM_STAT_GOOD";
+    @status[0x00] = "SAM_STAT_CHECK_CONDITION";
+    @status[0x00] = "SAM_STAT_CONDITION_MET";
+    @status[0x00] = "SAM_STAT_BUSY";
+    @status[0x00] = "SAM_STAT_INTERMEDIATE";
+    @status[0x00] = "SAM_STAT_INTERMEDIATE_CONDITION_MET";
+    @status[0x00] = "SAM_STAT_RESERVATION_CONFLICT";
+    @status[0x00] = "SAM_STAT_COMMAND_TERMINATED";
+    @status[0x00] = "SAM_STAT_TASK_SET_FULL";
+    @status[0x00] = "SAM_STAT_ACA_ACTIVE";
+    @status[0x00] = "SAM_STAT_TASK_ABORTED";
+}
+
+t:scsi:scsi_dispatch_cmd_done
+{
+    @[@host[(args->result >> 16) & 0xff], @status[args->result & 0xff]] = count();
+}
+
+END
+{
+    clear(@host);
+    clear(@status);
+}

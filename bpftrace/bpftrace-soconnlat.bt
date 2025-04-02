@@ -1,0 +1,40 @@
+#include <linux/in.h>
+
+BEGIN
+{
+    printf("Tracing IP connect() latency... Ctrl-C to end.\n");
+}
+
+t:syscalls:sys_enter_connect
+/args->uservaddr->sa_family == AF_INET || args->uservaddr->sa_family == AF_INET6/
+{
+    @conn_start[tid] = nsecs;
+    @conn_stack[tid] = ustack();
+}
+
+t:syscalls:sys_exit_connect
+/@conn_start[tid] && args->ret != -EINPROGRESS/
+{
+    $dur_us = (nsecs - @conn_start[tid]) / 1000;
+    @us[@conn_stack[tid], comm] = hist($dur_us);
+    delete(@conn_start[tid]);
+    delete(@conn_stack[tid]);
+}
+
+t:syscalls:sys_exit_poll*,
+t:syscalls:sys_exit_epoll*,
+t:syscalls:sys_exit_select*,
+t:syscalls:sys_exit_pselect*
+/@conn_start[tid] && args->ret > 0/
+{
+    $dur_us = (nsecs - @conn_start[tid]) / 1000;
+    @us[@conn_stack[tid], comm] = hist($dur_us);
+    delete(@conn_start[tid]);
+    delete(@conn_stack[tid]);
+}
+
+END
+{
+    clear(@conn_stack);
+    clear(@conn_start);
+}

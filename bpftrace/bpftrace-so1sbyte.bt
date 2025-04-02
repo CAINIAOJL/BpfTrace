@@ -1,0 +1,59 @@
+#include <linux/in.h>
+#include <asm-generic/errno.h>
+BEGIN
+{
+    printf("Tracing IP socket first-read-byte latency... Ctrl-C to end.\n");
+}
+
+t:syscalls:sys_enter_connect
+/args->uservaddr->sa_family == AF_INET || args->uservaddr->sa_family == AF_INET6/
+{
+    @connfd[tid] = args->fd;
+    @connstart[pid, args->fd] = nsecs;
+}
+
+t:syscalls:sys_exit_connect
+{
+    if (args->ret != 0 && args->ret != -EINPROGRESS) {
+        delete(@connstart[pid, @connfd[tid]]);
+    }
+    delete(@connfd[tid]);
+}
+
+t:syscalls:sys_enter_close
+/@connstart[pid, args->fd]/
+{
+    delete(@connstart[pid, @connfd[tid]]);
+}
+
+t:syscalls:sys_enter_read,
+t:syscalls:sys_enter_readv,
+t:syscalls:sys_enter_pread*,
+t:syscalls:sys_enter_recvfrom,
+t:syscalls:sys_enter_recvmsg,
+t:syscalls:sys_enter_recvmmsg
+/@connstart[pid, args->fd]/
+{
+    @readfd[tid] = args->fd;
+}
+
+t:syscalls:sys_exit_read,
+t:syscalls:sys_exit_readv,
+t:syscalls:sys_exit_pread*,
+t:syscalls:sys_exit_recvfrom,
+t:syscalls:sys_exit_recvmsg,
+t:syscalls:sys_exit_recvmmsg
+/@readfd[tid]/
+{
+    $fd = @readfd[tid];
+    @us[comm, pid] = hist((nsecs - @connstart[pid, $fd]) / 1000);
+    delete(@readfd[tid]);
+    delete(@connstart[pid, $fd]);
+}
+
+END
+{
+    clear(@readfd);
+    clear(@connstart);
+    clear(@connfd);
+}

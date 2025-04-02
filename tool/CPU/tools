@@ -1,0 +1,20 @@
+1, mpstat
+2, perf
+3, uptime
+4, top
+5，runqlat
+6, runqlen
+7, exitsnoop
+8, execsnoop
+9, Ftrace
+10, runqslower
+11, cpudist
+12, cpufreq
+13, profile
+14, offcputime
+15, syscount
+16, argdist
+17, softirqs
+18, hardirqs
+19, smpcalls
+20, opensnoop

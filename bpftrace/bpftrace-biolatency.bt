@@ -1,0 +1,22 @@
+BEGIN
+{
+    printf("Tracing block device I/O... Ctrl-C to end.\n");
+}
+
+//k:blk_account_io_start
+k:blk_mq_start_request
+{
+    @start[arg0] = nsecs;
+}
+
+//k:blk_account_io_done
+k:blk_insert_cloned_request
+/@start[arg0]/
+{
+    @usecs = hist(nsecs - @start[arg0] / 1000);
+    delete(@start[arg0]);
+}
+END
+{
+    clear(@start);
+}

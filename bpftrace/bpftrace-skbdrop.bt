@@ -1,0 +1,15 @@
+BEGIN
+{
+    printf("Tracing unusual skb drop stacks. Hit Ctrl-C to end.\n");
+    system("nstat 2> /dev/null");
+}
+
+t:skb:kfree_skb
+{
+    @[kstack(8)] = count();
+}
+
+END
+{
+    system("nstat; nstat -rs 2> /dev/null");
+}

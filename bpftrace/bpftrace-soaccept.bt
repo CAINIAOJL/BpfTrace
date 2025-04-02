@@ -1,0 +1,53 @@
+#include <linux/in.h>
+#include <linux/in6.h>
+
+BEGIN
+{
+    printf("%-6s %-16s FAM %-16s %-5s %s\n", "PID", "PROCESS", "ADDRESS", "PORT", "RESULT");
+    @err2str[0] = "success";
+    @err2str[EPERM] = "Permission denied"; 
+    @err2str[EINTR] = "Interrupted"; 
+    @err2str[EBADF] = "Invaild sockfd"; 
+    @err2str[EAGAIN] = "None to accept";
+    @err2str[ENOMEM] = "Out of memory"; 
+    @err2str[EFAULT] = "Sock struct addr invaild"; 
+    @err2str[EINVAL] = "Args invaild"; 
+    @err2str[ENFILE] = "System FD limit"; 
+    @err2str[EMFILE] = "Process FD limit"; 
+    @err2str[EPROTO] = "Protocol error"; 
+    @err2str[ENOTSOCK] = "FD not a socket"; 
+    @err2str[EOPNOTSUPP] = "Not sock_stream"; 
+    @err2str[ECONNABORTED] = "Aborted"; 
+    @err2str[ENOBUFS] = "Memory (ENOBUFS)"; 
+}
+
+t:syscalls:sys_enter_accept*
+{
+    @sockaddr[tid] = args->upeer_sockaddr;
+}
+
+t:syscalls:sys_exit_accept*
+/@sockaddr[tid]/
+{
+    $s = (struct sockaddr*)@sockaddr[tid];
+    if($s->sa_family == AF_INET || $s->sa_family == AF_INET6) {
+        printf("%-6d %-16s %-3d ", pid, comm, $s->sa_family);
+
+        if($s->sa_family == AF_INET) {
+            $sa = (struct sockaddr_in*)@sockaddr[tid];
+            $port = ($sa->sin_port >> 8) | (($sa->sin_port << 8) & 0xff00);
+            printf("%-16s %-5d %s\n", ntop(AF_INET, $sa->sin_addr.s_addr), $port, @err2str[-args->ret]);
+        } else {
+            $sa6 = (struct sockaddr_in6*)@sockaddr[tid];
+            $port = ($sa6->sin6_port >> 8) | (($sa6->sin6_port << 8) & 0xff00);
+            printf("%-16s %-5d %s\n", ntop(AF_INET6, $sa6->sin6_addr.in6_u.u6_addr8), $port, @err2str[-args->ret]);
+        }
+    }
+    delete(@sockaddr[tid]);
+}
+
+END
+{
+    clear(@sockaddr);
+    clear(@err2str);
+}

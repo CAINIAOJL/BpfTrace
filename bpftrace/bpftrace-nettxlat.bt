@@ -1,0 +1,29 @@
+BEGIN
+{
+    printf("Tracing net device xmit queue latency. Hit Ctrl-C to end.\n");
+}
+
+t:net:net_dev_start_xmit
+{
+    @start[args->skbaddr] = nsecs;
+}
+
+t:skb:consume_skb
+/@start[args->skbaddr]/
+{
+    $skb = (struct sk_buff *)args->skbaddr;
+    //@us = hist((nsecs - @start[args->skbaddr]) / 1000);
+    @us[$skb->dev->name] = hist((nsecs - @start[args->skbaddr]) / 1000);
+    delete(@start[args->skbaddr]);
+}
+
+t:net:net_dev_queue
+{
+    delete(@start[args->skbaddr]);
+}
+
+END
+{
+    clear(@start);
+}
+

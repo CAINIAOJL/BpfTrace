@@ -1,0 +1,162 @@
+/*
+#include <linux/skbuff.h>
+#include <linux/icmp.h>
+#include <linux/ip.h>
+#include <linux/ipv6.h>
+
+
+BEGIN
+{
+    printf("Tracing ICMP ping latency. Hit Ctrl-C to end.\n");
+}
+
+k:ip_send_skb //发送sk_buff
+{
+    $skb = (struct sk_buff *)arg1;
+    $iph = (struct iphdr *)($skb->head + $skb->network_header);
+    if($iph->protocol == IPPROTO_ICMP) {
+        $icmph = (struct icmphdr *)($skb->head + $skb->transport_header);
+        if($icmph->type == ICMP_ECHO) {
+            $id = $icmph->un.echo.id;
+            $seq = $icmph->un.echo.sequence;
+            @start[$id, $seq] = nsecs;
+        }
+    }
+}
+
+k:icmp_rcv //收到icmp包
+{
+    $skb = (struct sk_buff *)arg0;
+    $icmph = (struct icmphdr *)($skb->head + $skb->transport_header);
+    if($icmph->type == ICMP_ECHOREPLY) {
+        $id = $icmph->un.echo.id;
+        $seq = $icmph->un.echo.sequence;
+        $start = @start[$id, $seq];
+        if($start > 0) {
+            $idhost = ($id >> 8) | (($id << 8) & 0xff00);
+            $seqhost = ($seq >> 8) | (($seq << 8) & 0xff00);
+            printf("IPV4 ping, ID %d seq %d: %d us\n", $idhost, $seqhost, ((nsecs - $start) / 1000));
+            delete(@start[$id, $seq]);
+        }
+    }
+}
+
+
+k:ip6_send_skb
+{
+    $skb = (struct sk_buff *)arg0;
+    $ip6h = (struct ipv6hdr *)($skb->head + $skb->network_header);
+    if($ip6h->nexthdr == IPPROTO_ICMPV6) {
+        $icmp6h = (struct icmp6hdr *)($skb->head + $skb->transport_header);
+        if($icmp6h->icmp6_type == ICMPV6_ECHO_REQUEST) {
+            $id = $icmp6h->icmp6_dataun.u_echo.identifier;
+            $seq = $icmp6h->icmp6_dataun.u_echo.sequence;
+            @start[$id, $seq] = nsecs;
+        }
+    }
+}
+
+k:icmpv6_rcv
+{
+    $skb = (struct sk_buff *)arg0;
+    $icmp6h = (struct icmp6hdr *)($skb->head + $skb->transport_header);
+    if($icmp6h->icmp6_type == ICMPV6_ECHO_REPLY) {
+        $id = $icmp6h->icmp6_dataun.u_echo.identifier;
+        $seq = $icmp6h->icmp6_dataun.u_echo.sequence;
+        $start = @start[$id, $seq];
+        if($start > 0) {
+            $idhost = ($id >> 8) | (($id << 8) & 0xff00);
+            $seqhost = ($seq >> 8) | (($seq << 8) & 0xff00);
+            printf("IPV4 ping, ID %d seq %d: %d us\n", $idhost, $seqhost, ((nsecs - $start) / 1000));
+            delete(@start[$id, $seq]);
+        }
+    }
+}
+
+END
+{
+    clear(@start);
+}
+*/
+
+#include <linux/skbuff.h>
+#include <linux/icmp.h>
+#include <linux/ip.h>
+#include <linux/ipv6.h>
+
+BEGIN
+{
+    printf("Tracing ICMP ping latency. Hit Ctrl-C to end.\n");
+}
+
+// 跟踪 IPv4 ICMP Echo 请求的发送时间
+k:ip_send_skb
+{
+    $skb = (struct sk_buff *)arg1;
+    $iph = (struct iphdr *)($skb->head + $skb->network_header);
+    if($iph->protocol == IPPROTO_ICMP) {
+        $icmph = (struct icmphdr *)($skb->head + $skb->transport_header);
+        if($icmph->type == ICMP_ECHO) {
+            $id = $icmph->un.echo.id;
+            $seq = $icmph->un.echo.sequence;
+            @start[$id, $seq] = nsecs;
+        }
+    }
+}
+
+// 跟踪 IPv4 ICMP Echo 响应的接收时间，并计算延迟
+k:icmp_rcv
+{
+    $skb = (struct sk_buff *)arg0;
+    $icmph = (struct icmphdr *)($skb->head + $skb->transport_header);
+    if($icmph->type == ICMP_ECHOREPLY) {
+        $id = $icmph->un.echo.id;
+        $seq = $icmph->un.echo.sequence;
+        $start = @start[$id, $seq];
+        if($start > 0) {
+            $idhost = ($id >> 8) | (($id << 8) & 0xff00);
+            $seqhost = ($seq >> 8) | (($seq << 8) & 0xff00);
+            printf("IPV4 ping, ID %d seq %d: %d us\n", $idhost, $seqhost, ((nsecs - $start) / 1000));
+            delete(@start[$id, $seq]);
+        }
+    }
+}
+
+// 跟踪 IPv6 ICMPv6 Echo 请求的发送时间
+k:ip6_send_skb
+{
+    $skb = (struct sk_buff *)arg0;
+    $ip6h = (struct ipv6hdr *)($skb->head + $skb->network_header);
+    if($ip6h->nexthdr == IPPROTO_ICMPV6) {
+        $icmp6h = (struct icmp6hdr *)($skb->head + $skb->transport_header);
+        if($icmp6h->icmp6_type == ICMPV6_ECHO_REQUEST) {
+            $id = $icmp6h->icmp6_dataun.u_echo.identifier;
+            $seq = $icmp6h->icmp6_dataun.u_echo.sequence;
+            @start[$id, $seq] = nsecs;
+        }
+    }
+}
+
+// 跟踪 IPv6 ICMPv6 Echo 响应的接收时间，并计算延迟
+k:icmpv6_rcv
+{
+    $skb = (struct sk_buff *)arg0;
+    $icmp6h = (struct icmp6hdr *)($skb->head + $skb->transport_header);
+    if($icmp6h->icmp6_type == ICMPV6_ECHO_REPLY) {
+        $id = $icmp6h->icmp6_dataun.u_echo.identifier;
+        $seq = $icmp6h->icmp6_dataun.u_echo.sequence;
+        $start = @start[$id, $seq];
+        if($start > 0) {
+            $idhost = ($id >> 8) | (($id << 8) & 0xff00);
+            $seqhost = ($seq >> 8) | (($seq << 8) & 0xff00);
+            // 修正打印信息为 IPV6 ping
+            printf("IPV6 ping, ID %d seq %d: %d us\n", $idhost, $seqhost, ((nsecs - $start) / 1000));
+            delete(@start[$id, $seq]);
+        }
+    }
+}
+
+END
+{
+    clear(@start);
+}

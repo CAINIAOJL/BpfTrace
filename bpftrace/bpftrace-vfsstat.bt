@@ -1,0 +1,20 @@
+BEGIN
+{
+    printf("Tracing key VFS calls... Hit Ctrl-C to end.\n");
+}
+
+k:vfs_read*,
+k:vfs_create,
+k:vfs_fsync,
+k:vfs_open,
+k:vfs_write*
+{
+    @[func] = count();
+}
+
+interval:s:1
+{
+    time();
+    print(@);
+    clear(@);
+}

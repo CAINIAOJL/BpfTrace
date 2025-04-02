@@ -1,0 +1,21 @@
+BEGIN
+{
+    printf("Tracing qdisc fq latency. Hit Ctrl-C to end.\n");
+}
+
+k:fq_enqueue
+{
+    @start[arg0] = nsecs;
+}
+
+kr:fq_dequeue
+/@start[retval]/
+{
+    @us = hist((nsecs - @start[retval]) / 1000);
+    delete(@start[retval]);
+}
+
+END
+{
+    clear(@start);
+}

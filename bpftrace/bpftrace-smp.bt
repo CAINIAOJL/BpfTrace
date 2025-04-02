@@ -1,0 +1,38 @@
+BEGIN
+{
+    printf("Tracing SMP calls, Hit Ctr-C to stop.\n")
+}
+k:smp_call_function_single,
+k:smp_call_function_many
+{
+    @ts[tid] = nsecs;
+    @func[tid] = arg1;
+}
+
+kr:smp_call_function_single,
+kr:smp_call_function_many
+/@ts[tid]/
+{
+    //ksym 将地址转换为函数名
+    @time_ns[comm, kstack, ksym(@func[tid])] = hist(nsecs - @ts[tid]);
+    delete(@ts[tid]);
+    delete(@func[tid]);
+}
+
+k:native_smp_send_reschedule
+{
+    @ts[tid] = nsecs;
+    @func[tid] = reg("ip");
+}
+
+kr:native_smp_send_reschedule
+/@ts[tid]/
+{
+    @time_ns[comm, kstack, ksym(@func[tid])] = hist(nsecs - @ts[tid]);
+    delete(@ts[tid]);
+    delete(@func[tid]);
+}
+END{
+    clear(@ts);
+    clear(@func);
+}

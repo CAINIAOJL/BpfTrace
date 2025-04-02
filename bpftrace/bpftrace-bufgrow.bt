@@ -1,0 +1,10 @@
+#include <linux/fs.h>
+
+k:add_to_page_cache_lru
+{
+    $as = (struct address_space *)arg1;
+    $mode = $as->host->i_mode;
+    if($mode & 0x6000) {
+        @kb[comm] = sum(4);
+    }
+}

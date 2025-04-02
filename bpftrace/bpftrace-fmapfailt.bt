@@ -1,0 +1,8 @@
+#include <linux/mm.h>
+
+k:filemap_fault
+{
+    $vf = (struct vm_fault *) arg0;
+    $file = $vf->vma->vm_file->f_path.dentry->d_name.name;
+    @[comm, str($file)] = count();
+}   

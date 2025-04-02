@@ -1,0 +1,31 @@
+
+BEGIN
+{
+    printf("Tracing stat syscalls... Hit Ctr-C to end.\n");
+    printf("%-6s %-16s %3s %s\n", "PID", "COMM", "ERR", "PATH");
+}
+
+t:syscalls:sys_enter_statfs
+{
+    @filename[tid] = args->pathname;
+}
+
+t:syscalls:sys_enter_statx,
+t:syscalls:sys_enter_newstat,
+t:syscalls:sys_enter_newlstat
+{
+    @filename[tid] = args->filename;
+}
+
+t:syscalls:sys_exit_statfs,
+t:syscalls:sys_exit_statx,
+t:syscalls:sys_exit_newstat,
+t:syscalls:sys_exit_newlstat
+/@filename[tid]/
+{
+    $ret = args->ret;
+    $errno = $ret > 0 ? 0 : -$ret;
+
+    printf("%-6d %-16s %3d %s\n", pid, comm, $errno, str(@filename[tid]));
+    delete(@filename[tid]);
+}

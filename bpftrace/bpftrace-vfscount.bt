@@ -1,0 +1,16 @@
+BEGIN
+{
+    printf("Tracing all vfs_* func, Hit Ctrl-C to end.\n");
+}
+
+k:vfs_*
+{
+    @[func] = count();
+}
+
+interval:s:1
+{
+    time();
+    print(@);
+    clear(@);
+}

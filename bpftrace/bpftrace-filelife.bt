@@ -1,0 +1,21 @@
+#include <linux/fs.h>
+
+BEGIN
+{
+    printf("%-6s %-16s %8s %s\n", "PID", "COMM", "AGE(ms)", "FILE");
+}
+
+k:vfs_create,
+k:security_inode_create
+{
+    @birth[arg2] = nsecs;
+}
+
+k:vfs_unlink
+/@birth[arg2]/
+{
+    $dur = nsecs - @birth[arg2];
+    delete(@birth[arg2]);
+    $dentry = (struct dentry *)arg2;
+    printf("%-6d %-16s %8d %s\n", pid, comm, $dur / 1000000, str($dentry->d_name.name));
+}

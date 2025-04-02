@@ -1,0 +1,14 @@
+#include <linux/fs.h>
+
+BEGIN
+{
+    printf("Tracing VFS reads and writes... Ctrl-C to end.\n");
+}
+
+k:vfs_read,
+k:vfs_readv,
+k:vfs_write,
+k:vfs_writev
+{
+    @[str(((struct file*)arg0)->f_inode->i_sb->s_type->name), func] = count();
+}

@@ -1,0 +1,37 @@
+BEGIN
+{
+    printf("Tracing TCP Nagle and xmit delays. Hit Ctrl-C to end.\n");
+    @flags[0x0] = "ON";
+    @flags[0x1] = "OFF";
+    @flags[0x2] = "CORK";
+    @flags[0x3] = "OFF|CORK";
+    @flags[0x4] = "PUSH";
+    @flags[0x5] = "OFF|PUSH";
+}
+
+k:tcp_write_xmit
+{
+    @nagle[@flags[arg2]] = count();
+    @sk[tid] = arg0;
+}
+kr:tcp_write_xmit
+/@sk[tid]/
+{
+    $inflight = retval & 0xff;
+    $sk = @sk[tid];
+    if($inflight && !@start[$sk]) {
+        @start[$sk] = nsecs;
+    }
+    if(!$inflight && @start[$sk]) {
+        @blocked_us = hist((nsecs - @start[$sk]) / 1000);
+        delete(@start[$sk]);
+    }
+    delete(@sk[tid]);
+}
+
+END
+{
+    clear(@flags);
+    clear(@start);
+    clear(@sk);
+}

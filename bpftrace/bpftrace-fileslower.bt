@@ -1,0 +1,46 @@
+#include <linux/fs.h>
+
+BEGIN
+{
+    printf("%-8s %-16s %-6s T %-7s %7s %s\n", "TIMEms", "COMM", "PID", "BYTES", "LATms", "FILE");
+}
+
+k:new_sync_read,
+k:new_sync_write
+{
+    $file = (struct file*)arg0;
+    if($file->f_path.dentry->d_name.len != 0) {
+        @name[tid] = $file->f_path.dentry->d_name.name;
+        @size[tid] = arg2; 
+        @start[tid] = nsecs;
+    }   
+}
+kr:new_sync_read
+/@start[tid]/
+{
+    $read_ns = nsecs - @start[tid];
+    if ($read_ns >= 1) {
+        printf("%-8d %-16s %-6d %-7d %7d %s\n", nsecs / 1000000, comm, pid, @size[tid], $read_ns, str(@name[tid]));
+    }
+    delete(@start[tid]);
+    delete(@name[tid]);
+    delete(@size[tid]);
+}
+kr:new_sync_write
+/@start[tid]/
+{
+    $write_ns = nsecs - @start[tid];
+    if ($write_ns >= 1) {
+        printf("%-8d %-16s %-6d %-7d %7d %s\n", nsecs / 1000000, comm, pid, @size[tid], $write_ns, str(@name[tid]));
+    }
+    delete(@start[tid]);
+    delete(@name[tid]);
+    delete(@size[tid]);
+}
+
+END
+{
+    clear(@start);
+    clear(@name);
+    clear(@size);
+}

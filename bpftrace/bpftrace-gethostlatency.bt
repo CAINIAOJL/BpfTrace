@@ -1,0 +1,25 @@
+BEGIN
+{
+    printf("Tracing getaddr/gethost calls... Hit Ctrl-C to end.\n");
+    printf("%-9s %-6s %-16s %6s %s\n", "TIME", "PID", "COMM", "LAT(ms)", "HOST");
+}
+
+u:/lib/x86_64-linux-gnu/libc.so.6:getaddrinfo,
+u:/lib/x86_64-linux-gnu/libc.so.6:gethostbyname,
+u:/lib/x86_64-linux-gnu/libc.so.6:gethostbyname2
+{
+    @start[tid] = nsecs;
+    @name[tid] = arg0;
+}
+
+ur:/lib/x86_64-linux-gnu/libc.so.6:getaddrinfo,
+ur:/lib/x86_64-linux-gnu/libc.so.6:gethostbyname,
+ur:/lib/x86_64-linux-gnu/libc.so.6:gethostbyname2
+/@start[tid]/
+{
+    $latms = (nsecs - @start[tid]) / 1000000;
+    time("%H:%M:%S  ");
+    printf("%-6d %-16s %6d %s\n", pid, comm, $latms, str(@name[tid]));
+    delete(@start[tid]);
+    delete(@name[tid]);
+}

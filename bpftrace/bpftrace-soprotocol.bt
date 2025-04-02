@@ -1,0 +1,23 @@
+#include <net/sock.h>
+
+BEGIN
+{
+    printf("Tracing socket connect/accepts... Ctrl-C to end.\n");
+    @pro2str[IPPROTO_TCP] = "IPPROTO_TCP";
+    @pro2str[IPPROTO_IP] = "IPPROTO_IP";
+    @pro2str[IPPROTO_ICMP] = "IPPROTO_ICMP";
+    @pro2str[IPPROTO_UDP] = "IPPROTO_UDP";
+}
+
+k:security_socket_connect,
+k:security_socket_accept
+{
+    $sock = (struct socket*)arg0;
+    $protocol = $sock->sk->sk_protocol & 0xff;
+    @connect[comm, $protocol, @pro2str[$protocol], $sock->sk->__sk_common.skc_prot->name] = count();
+}
+
+END
+{
+    clear(@pro2str);
+}

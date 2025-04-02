@@ -1,0 +1,17 @@
+BEGIN
+{
+    printf("Tracing block I/O requested seeks... Hit Ctrl-C to end.\n");
+}
+
+t:block:block_rq_issue
+{
+    if(@last[args->dev]) {
+        $last = @last[args->dev];
+        $dist = (args->sector - $last) > 0 ? args->sector - $last : $last - args->sector
+    }
+    @last[args->dev] = args->sector + args->nr_sector;
+}
+END
+{
+    clear(@last);
+}

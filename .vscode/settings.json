@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "*.bt": "bat",
+        "sched.h": "c",
+        "fs.h": "c",
+        "types.h": "c",
+        "posix_types.h": "c",
+        "stddef.h": "c"
+    }
+}

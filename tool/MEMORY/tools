@@ -1,0 +1,16 @@
+1, dmesg
+2, swapon
+3, free
+4, ps
+5, pmap
+6, vmstat
+7, sar
+8, perf 
+9, oomkill
+10, memleak
+11, mmapsnoop
+12, shmsnoop
+13, vmscan
+14, drsnoop
+15, swapin
+16，hfaults

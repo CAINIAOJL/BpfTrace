@@ -1,0 +1,25 @@
+#include <linux/sched.h>
+//finish_task_swith函数可能在6.8.0-56-generic中不存在,或不可以trace
+BEGIN
+{
+    printf("Tracing nanosecond time in off-CPU stacks. Ctrl-C to end.\n");
+}
+
+kprobe:finish_task_switch
+{
+    //record previous thread sleep time
+    $prev = (struct task_struct*)arg0;
+    //过滤tgid
+    if ($1 == 0 || $prev->tgid == $1) {
+        @start[$prev->pid] = nsecs; //记录时间
+    }
+    $last = @start[tid];
+    if($last != 0) {
+        @[kstack, ustack, comm] = sum(nsecs-$last); //创建映射【内核栈，用户栈，command】-》sum（time）
+        delete(@start[tid]);
+    }
+}
+END
+{
+    clear(@start);
+}

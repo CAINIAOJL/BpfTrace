@@ -1,0 +1,27 @@
+#!/usr/bin/bpftrace
+
+#include <linux/sched.h>
+
+struct cfs_rq_partial {
+    struct load_weight load;
+    unsigned long runnable_weight;
+    unsigned int nr_running;
+}
+
+BEGIN
+{
+    print("Sampling run queue lenth at 99 Hertz... Hit Ctrl-C to end. \n")
+}
+
+profile:hz:99
+{
+    $task = (struct task_struct*)curtask;
+    $my_q = (struct cfs_rq_partial *)$task->se.cfs_rq;
+    $len = $my_q->nr_running;
+    if ($len > 0) {
+        $len = $len - 1;
+    } else {
+        $len = 0;
+    }
+    @runlen = lhist($len, 0, 100, 1);
+}

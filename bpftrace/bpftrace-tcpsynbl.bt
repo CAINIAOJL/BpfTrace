@@ -1,0 +1,21 @@
+#include <net/sock.h>
+
+BEGIN
+{
+    printf("Tracing SYN backlog size. Ctrl-C to end.\n");
+}
+
+k:tcp_v4_syn_recv_sock,
+k:tcp_v6_syn_recv_sock
+{
+    $sock = (struct sock *)arg0;
+    @backlog[$sock->sk_max_ack_backlog & 0xfffffff] = hist($sock->sk_ack_backlog);
+    if($sock->sk_ack_backlog > $sock->sk_max_ack_backlog) {
+        time("%H:%M:%S dropping a SYN.\n");
+    }
+}
+
+END
+{
+    printf("\n@backlog[backlog limit]: histrogram of backlog size\n");
+}

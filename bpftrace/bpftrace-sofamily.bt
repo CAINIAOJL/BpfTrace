@@ -1,0 +1,34 @@
+#include <linux/socket.h>
+BEGIN
+{
+    printf("Tracing socket connect/accepts. Ctrl-C to end.\n");
+    @fam2str[AF_UNSPEC] = "AF_UNSPEC";
+    @fam2str[AF_UNIX] = "AF_UNIX";
+    @fam2str[AF_INET] = "AF_INET";
+    @fam2str[AF_INET6] = "AF_INET6";
+}
+
+t:syscalls:sys_enter_connect
+{
+    @connect[comm, args->uservaddr->sa_family, @fam2str[args->uservaddr->sa_family]] = count();
+}
+
+t:syscalls:sys_enter_accept*
+{
+    @sockaddr[tid] = args->upeer_sockaddr;
+}
+
+t:syscalls:sys_exit_accept*
+{
+    if(args->ret > 0) {
+        $sa = (struct sockaddr*)@sockaddr[tid];
+        @accepts[comm, $sa->sa_family, @fam2str[$sa->sa_family]] = count();
+    }
+    delete(@sockaddr[tid]);
+}
+
+END
+{
+    clear(@sockaddr);
+    clear(@fam2str);
+}

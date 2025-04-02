@@ -1,0 +1,10 @@
+#include <linux/sched.h>
+#include <linux/fs.h>
+#include <linux/fdtable.h>
+
+t:syscalls:sys_enter_read
+{
+    $task = (struct task_struct *)curtask;
+    $file = (struct file*) *($task->files->fdt->fd + args->fd);
+    @filename[str($file->f_path.dentry->d_name.name)] = count();
+}

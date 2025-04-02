@@ -1,0 +1,51 @@
+//#include <linux/fs.h>
+//#include <linux/sched.h>
+
+struct nameidata {
+	struct path	path;
+	struct qstr	last;
+	struct path	root;
+	//struct inode	*inode; /* path.dentry.d_inode */
+	//unsigned int	flags, state;
+	//unsigned	seq, next_seq, m_seq, r_seq;
+	//int		last_type;
+	//unsigned	depth;
+	//int		total_link_count;
+	//struct saved {
+		//struct path link;
+		//struct delayed_call done;
+		//const char *name;
+		//unsigned seq;
+	//} *stack, internal[EMBEDDED_LEVELS];
+	//struct filename	*name;
+	//struct nameidata *saved;
+	//unsigned	root_seq;
+	//int		dfd;
+	//vfsuid_t	dir_vfsuid;
+	//umode_t		dir_mode;
+}
+
+BEGIN
+{
+    printf("Tracing dcache lookups... Hit Ctrl-C to end.\n");
+    printf("%-8s %-6s %-16s %1s %s\n", "TIME", "PID", "COMM", "T", "FILE");
+}
+
+k:lookup_fast
+{
+    $nd = (struct nameidata *)arg0;
+    printf("%-8d %-6d %-16s R %s\n", elapsed / 1000000, pid, comm, str($nd->last.name));
+}
+k:d_lookup
+{
+    $name = (struct qstr*)arg1;
+    @fname[tid] = $name->name;
+}
+kr:d_lookup
+/@fname[tid]/
+{
+    if (retval == 0) {
+        printf("%-8d %-6d %-16s M %s\n", elapsed / 1000000, pid, comm, str(@fname[tid]));
+    }
+    delete(@fname[tid]);
+}

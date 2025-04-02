@@ -1,0 +1,12 @@
+/*
+t:syscalls:sys_enter_brk
+{
+    @[ustack, comm] = count();
+}
+*/
+
+software:page-faults:1
+{
+    @[ustack, comm] = count();
+}
+

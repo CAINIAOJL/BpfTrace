@@ -1,0 +1,23 @@
+BEGIN
+{
+    printf("Tracing block I/O schedulers... Hit Ctrl-C to end.\n");
+}
+
+k:__elv_add_request
+{
+    @start[arg1] = nsecs;
+}
+
+k:blk_start_request,
+k:blk_mq_start_request
+/@start[arg0]/
+{
+    $r = (struct request*)arg0;
+    @usecs[$r->q->elevator->type->elevator_name] = hist((nsecs - @start[arg0]) / 1000);
+    delete(@start[arg0]);
+}
+
+END
+{
+    clear(@start);
+}

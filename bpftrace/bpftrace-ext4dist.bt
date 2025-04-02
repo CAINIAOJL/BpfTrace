@@ -1,0 +1,29 @@
+BEGIN
+{
+    printf("Tracing ext4 operation latency... Ctrl-C to end.\n");
+}
+
+k:ext4_file_read_iter,
+k:ext4_file_write_iter,
+k:ext4_file_open,
+k:ext4_sync_file
+{
+    @start[tid] = nsecs;
+    @name[tid] = func;
+}
+
+kr:ext4_file_read_iter,
+kr:ext4_file_write_iter,
+kr:ext4_file_open,
+kr:ext4_sync_file
+/@start[tid]/
+{
+    @us[@name[tid]] = hist(nsecs - @start[tid] / 1000);
+    delete(@start[tid]);
+    delete(@name[tid]);
+}
+END
+{
+    clear(@start);
+    clear(@name);
+}

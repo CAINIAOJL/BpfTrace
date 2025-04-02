@@ -1,0 +1,32 @@
+#include <linux/fs.h>
+
+k:vfs_read,
+k:vfs_readv,
+k:vfs_write,
+k:vfs_writev
+{
+    @file[tid] = arg0; //arg0 = struct file *
+}
+
+kr:vfs_read,
+kr:vfs_readv,
+kr:vfs_write,
+kr:vfs_writev
+/@file[tid]/
+{
+    if (retval >= 0) {
+        $file = (struct file *)@file[tid];
+        $name = $file->f_path.dentry->d_name.name;
+        if((($file->f_inode->i_mode >> 12) && 15) == DT_FIFO) {
+            @[comm, "FIFO"] = hist(retval);
+        } else {
+            @[comm, str($name)] = hist(retval);
+        }
+    }
+    delete(@file[tid]);
+}
+
+END
+{
+    clear(@file);
+}

@@ -1,0 +1,39 @@
+#include <net/mac80211.h>
+
+BEGIN
+{
+    printf("Tracing ieee80211 SSID scans. Hit Ctrl-C to end.\n");
+    @band[0] = "2GHZ";
+    @band[1] = "5GHZ";
+    @band[2] = "60GHZ";
+}
+
+k:ieee80211_request_scan
+{
+    time("%H:%M:%S  ");
+    printf("scan started (on-CPU PID %d,  %s)\n", pid, comm);
+    @start=nsecs;
+}
+
+kr:ieee80211_get_channel_khz
+/retval/
+{
+    $ch = (struct ieee80211_channel *)retval;
+    $band = 0xff & *retval;
+    time("%H:%M:%S  ");
+    printf("scanning channel %s freq %d: beacon_found %d\n", @band[$band], $ch->center_freq, $ch->beacon_found);
+}
+
+k:ieee80211_scan_completed
+/@start/
+{
+    time("%H:%M:%S  ");
+    printf("scan completed: %d ms\n", (nsecs - @start) / 1000000);
+    delete(@start);
+}
+
+END
+{
+    clear(@start);
+    clear(@band);
+}

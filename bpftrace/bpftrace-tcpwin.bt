@@ -1,0 +1,33 @@
+#include <net/sock.h>
+#include <linux/tcp.h>
+
+BEGIN
+{
+    printf("event, sock, time_us, snd_cwnd, snd_ssthresh, sk_sndbuf,");
+    printf("sk_wmem_queued\n");
+}
+/*
+field:__u8 saddr[28];   offset:8;       size:28;        signed:0;
+field:__u8 daddr[28];   offset:36;      size:28;        signed:0;
+field:__u16 sport;      offset:64;      size:2; signed:0;
+field:__u16 dport;      offset:66;      size:2; signed:0;
+field:__u16 family;     offset:68;      size:2; signed:0;
+field:__u32 mark;       offset:72;      size:4; signed:0;
+field:__u16 data_len;   offset:76;      size:2; signed:0;
+field:__u32 snd_nxt;    offset:80;      size:4; signed:0;
+field:__u32 snd_una;    offset:84;      size:4; signed:0;
+field:__u32 snd_cwnd;   offset:88;      size:4; signed:0;
+field:__u32 ssthresh;   offset:92;      size:4; signed:0;
+field:__u32 snd_wnd;    offset:96;      size:4; signed:0;
+field:__u32 srtt;       offset:100;     size:4; signed:0;
+field:__u32 rcv_wnd;    offset:104;     size:4; signed:0;
+field:__u64 sock_cookie;        offset:112;     size:8; signed:0;
+*/
+
+k:tcp_rcv_established
+//t:tcp:tco_probe
+{
+    $sock = (struct sock *)arg0;
+    $tcps = (struct tcp_sock *)arg0;
+    printf("rcv,0x%11x,%11d,%d,%d,%d,%d\n", arg0, elapsed / 1000, $tcps->snd_cwnd, $tcps->snd_ssthresh, $sock->sk_sndbuf, $sock->sk_wmem_queued);
+}

@@ -1,0 +1,38 @@
+BEGIN
+{
+    printf("Tracing writebacl... Hit Ctrl-C to end.\n");
+    printf("%-9s %-8s %-8s %-16s %s\n", "TIME", "DEVICE", "PAGES", "REASON", "ms");
+    @reason[0] = "background";
+    @reason[1] = "vmscan";
+    @reason[2] = "sync";
+    @reason[3] = "periodic";
+    @reason[4] = "laptop_timer";
+    @reason[5] = "fs_free_space";
+    @reason[6] = "forker_thread";
+    @reason[7] = "foreign_flush";
+}
+
+t:writeback:writeback_start
+{
+    @start[args->sb_dev] = nsecs;
+    @pages[args->sb_dev] = args->nr_pages;
+}
+t:writeback:writeback_written
+/@start[args->sb_dev]/
+{
+    $sb_dev = args->sb_dev;
+    $s = @start[$sb_dev];
+    $lat = $s ? (nsecs - $s) / 1000 : 0;
+    $pages = @pages[args->sb_dev] - args->nr_pages;
+
+    time("%H:%M:%S  ");
+    printf("%-8s %-8d %-16s %d.%03d\n", args->name, $pages, @reason[args->reason], $lat/1000, $lat%1000);
+    delete(@start[$sb_dev]);
+    delete(@pages[$sb_dev]);
+}
+
+END
+{
+    clear(@start);
+    clear(@reason);
+}
