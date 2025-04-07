@@ -1,0 +1,16 @@
+BEGIN
+{
+    printf("Tracing EACCESS and EPERM syscalls errors. Ctrl-C to end.\n");
+}
+
+t:raw_syscalls:sys_exit
+/args->ret == -1/
+{
+    @EACCESS[comm, ksym(*(kaddr("sys_call_table") + args->id * 8))] = count();
+}
+
+t:raw_syscalls:sys_exit
+/args->ret == -13/
+{
+    @EPERM[comm, ksym(*(kaddr("sys_call_table") + args->id * 8))] = count();
+}

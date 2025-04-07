@@ -1,0 +1,10 @@
+BEGIN
+{
+    printf("Tracing page allocation stacks, Hit Ctrl-C to end.\n");
+}
+
+t:kmem:mm_page_alloc
+{
+    @pages[kstack(5), comm] = count();
+
+}

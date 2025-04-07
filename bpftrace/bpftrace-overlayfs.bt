@@ -1,0 +1,39 @@
+#include <linux/nsproxy.h>
+#include <linux/pid_namespace.h>
+
+k:ovl_read_iter
+/((struct task_struct *)curtask)->nsproxy->pid_ns_for_children->ns.inum == $1/
+{
+    @read_start[tid] = nsecs;
+}
+
+kr:ovl_read_iter
+/((struct task_struct *)curtask)->nsproxy->pid_ns_for_children->ns.inum == $1/
+{
+    $duration_us = (nsecs - @read_start[tid]) / 1000;
+    @read_latency_us = hist($duration_us);
+    delete(@read_start[tid]);
+}
+
+k:ovl_write_iter
+/((struct task_struct *)curtask)->nsproxy->pid_ns_for_children->ns.inum == $1/
+{
+    @write_start[tid] = nsecs;
+}
+
+kr:ovl_write_iter
+/((struct task_struct *)curtask)->nsproxy->pid_ns_for_children->ns.inum == $1/
+{
+    $duration_us = (nsecs - @write_start[tid]) / 1000;
+    @write_latency_us = hist($duration_us);
+    delete(@write_start[tid]);
+}
+
+interval:s:1000
+{
+    time("\n%H:%M:%S ----------------\n");
+    print(@read_latency_us);
+    print(@write_latency_us);
+    clear(@read_latency_us);
+    clear(@write_latency_us);
+}

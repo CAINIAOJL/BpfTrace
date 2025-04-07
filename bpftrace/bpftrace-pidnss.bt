@@ -1,0 +1,25 @@
+#include <linux/sched.h>
+#include <linux/nsproxy.h>
+#include <linux/utsname.h>
+#include <linux/pid_namespace.h>
+
+BEGIN
+{
+    printf("Tracing PID namespace switches. Ctrl-C to end.\n");
+}
+
+k:finish_task_switch
+{
+    $prev = (struct task_struct *)arg0;
+    $curr = (struct task_struct *)curtask;
+    $prev_pidns = $prev->nsproxy->pid_ns_for_children->ns.inum;
+    $curr_pidns = $curr->nsproxy->pid_ns_for_children->ns.inum;
+    if($prev_pidns != $curr_pidns) {
+        @[$prev_pidns, $curr_pidns] = count();
+    }
+}
+
+END
+{
+    printf("\nVictim PID namespace swtich counts: [PIDNS, nodename]:\n");
+}

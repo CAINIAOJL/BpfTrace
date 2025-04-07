@@ -1,0 +1,20 @@
+BEGIN
+{
+    printf("Tracing I/O syscall user stacks. Ctrl-C to end.\n");
+}
+
+t:syscalls:sys_enter_*read*,
+t:syscalls:sys_enter_*write*,
+t:syscalls:sys_enter_*send*,
+t:syscalls:sys_enter_*recv*
+/$1 == 0 || pid == $1/
+{
+    @[probe, ustack, comm] = count();
+}
+
+interval:s:10
+{
+    time();
+    print(@);
+    clear(@);
+}

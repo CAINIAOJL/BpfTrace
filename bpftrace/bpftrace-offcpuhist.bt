@@ -1,0 +1,25 @@
+#include <linux/sched.h>
+
+BEGIN
+{
+    printf("Tracing nanoseconds time in off-CPU stacks. Ctrl-C to end.\n");
+}
+
+k:finish_task_switch
+{
+    $prev = (struct task_struct *)arg0;
+    if($1 == 0 || $prev->tgid == $1) {
+        @start[$prev->pid] = nsecs; //当前的进程
+    }
+
+    $last = @start[tid];
+    if($last != 0) {
+        @[kstack, ustack, comm, tid] = hist(nsecs - $last);
+        delete(@start[tid]);
+    }
+}
+
+END
+{
+    clear(@start);
+}

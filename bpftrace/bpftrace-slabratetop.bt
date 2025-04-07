@@ -1,0 +1,20 @@
+#include <linux/mm.h>
+#include <linux/slab.h>
+//#ifdef CONFIG_SLUB
+//#include <linux/slub_def.h>
+//#else
+//#include <linux/slab_def.h>
+//#endif
+
+k:kmem_cache_alloc
+{
+    $cachep = (struct kmem_cache *)arg0;
+    @[str($cachep->name)] = count();
+}
+
+interval:s:1
+{
+    time();
+    print(@);
+    clear(@);
+}

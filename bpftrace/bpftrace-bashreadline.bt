@@ -1,0 +1,11 @@
+BEGIN
+{
+    printf("Tracing bash commands... Hit Ctrl-C to end.\n");
+    printf("%-9s %-6s %s\n", "TIME", "PID", "COMMAND");
+}
+
+u:/bin/bash:readline //问题
+{
+    time("%H:%M:%S  ");
+    printf("%-6d %s\n", pid, str(retval));
+}

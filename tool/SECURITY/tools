@@ -1,1 +1,11 @@
 1, snort
+2, execsnoop
+3, elfsnoop
+4, modsnoop
+5, bashreadline
+6，shellsnoop
+7, ttysnoop
+8, eperm
+9, tcpreset
+10, capable
+11, setuids

@@ -1,0 +1,26 @@
+1, Ftrace
+2, perf shced
+3, slabtop
+4, loads
+5, offcputime
+6, wakeuptime
+7, offwaketime
+8, mlock
+9, mheld
+10, kmem
+11, kpages
+12, memleak
+13, slabratetop //sudo cat /boot/config-$(uname -r) | grep CONFIG_SLAB
+14, workq
+15, runqlat
+16, syscount
+17, hardirq
+18, softirq
+19, xcalls
+20, vmscan
+21, vfsstat
+22, cachestat
+23, biostacks
+24, skblife
+25, inject
+26, criticalstat

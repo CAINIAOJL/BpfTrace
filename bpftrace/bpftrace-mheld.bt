@@ -1,0 +1,40 @@
+BEGIN
+{
+    printf("Tracing mutex_lock() held time, Ctrl-C to end.\n");
+}
+
+k:mutex_lock,
+k:mutex_lock_interruptible,
+k:mutex_trylock
+/$1 == 0 || pid == $1/
+{
+    @lock_addr[tid] = arg0;
+}
+
+kr:mutex_lock
+/($1 == 0 || pid == $1) && @lock_addr[tid]/
+{
+    @held_start[@lock_addr[tid]] = nsecs;
+    delete(@lock_addr[tid]);
+}
+
+kr:mutex_trylock,
+kr:mutex_lock_interruptible
+/retval == 0 && ($1 == 0 || pid == $1) && @lock_addr[tid]/
+{
+    @held_start[@lock_addr[tid]] = nsecs;
+    delete(@lock_addr[tid]);
+}
+
+k:mutex_unlock
+/($1 == 0 || pid == $1) && @held_start[arg0]/
+{
+    @held_time_ns[ksym(arg0), kstack(5), comm] = hist(nsecs - @held_start[arg0]);
+    delete(@held_start[arg0]);
+}
+
+END
+{
+    clear(@lock_addr);
+    clear(@held_start);
+}

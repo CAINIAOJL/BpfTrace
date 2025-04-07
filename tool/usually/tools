@@ -1,0 +1,2 @@
+c/c++:-fno-omit-frame-pointer
+java:-XX:+PreserverFramePointer

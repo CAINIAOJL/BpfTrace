@@ -1,0 +1,25 @@
+#include <linux/cgroup-defs.h>
+#include <linux/blk-cgroup.h>
+//有问题，在6.8版本中，blk_throtl_bio是内联函数，没有符合的参数
+BEGIN
+{
+    printf("Tracing block I/O throttles by cgroup. Ctrl-C to end.\n");
+}
+
+k:blk_throtl_bio 6.8-inline
+//k:__blk_throtl_bio
+{
+    @blkg[tid] = arg1;
+}
+
+kr:blk_throtl_bio
+/@blkg[tid]/
+{
+    $blkg = (struct blkcg_gq *)@blkg[tid];
+    if(retval) {
+        @throttled[$blkg->blkcg->css.id] = count();
+    } else {
+        @notthrottled[$blkg->blkcg->css.id] = count();
+    }
+    delete(@blkg[tid]);
+}

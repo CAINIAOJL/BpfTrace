@@ -1,0 +1,20 @@
+BEGIN
+/$1==0/
+{   
+    printf("USAGE: shellsnoop.bt PID\n");
+    exit();
+}
+
+//追踪父进程与子进程
+t:sched:sched_process_fork
+/args->parent_pid == $1 || @descendent[args->parent_pid]/
+{
+    @descendent[args->child_pid] = 1;
+}
+
+t:syscalls:sys_enter_write
+//pid == $1 && (args->fd == 1 || args->fd == 2)
+/(pid == $1 || @descendent[pid]) && (args->fd == 1 || args->fd == 2)/
+{
+    printf("%s", str(args->buf, args->count));
+}

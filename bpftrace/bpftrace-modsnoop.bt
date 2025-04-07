@@ -1,0 +1,13 @@
+#include <linux/module.h>
+
+BEGIN
+{
+    printf("Tracing kernel module loads. Hit Ctrl-C to end.\n");
+}
+
+k:do_init_module
+{
+    $mod = (struct module *)arg0;
+    time("%H:%M:%S  ");
+    printf("module init: %s, by %s (PID %d, user %s, UID %d)\n", $mod->name, comm, pid, username, uid);
+}

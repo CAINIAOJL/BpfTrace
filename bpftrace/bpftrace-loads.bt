@@ -1,0 +1,21 @@
+BEGIN
+{
+    printf("Reading load averages... Hit Ctrl-C to end.\n");
+}
+
+interval:s:1
+{
+    /*
+    kernel/sched/loadavg.c
+    include/linux/sched/loadavg.h
+    */
+
+    $avenrun = kaddr("avenrun");
+    $load1 = $avenrun;
+    $load2 = $avenrun + 8;
+    $load3 = $avenrun + 16;
+    time("%H:%M:%S ");
+    //unsigned long avenrun[3];
+    //printf("load averages: %d.%03d %d.%03d %d.%03d\n", ($load1 >> 11), (($load1 & ((1 << 11) - 1)) * 1000) >> 11, ($load2 >> 11), (($load2 & ((1 << 11) - 1)) * 1000) >> 11, ($load3 >> 11), (($load3 & ((1 << 11) - 1)) * 1000) >> 11);
+    printf("load averages: %d.%03d %d.%03d %d.%03d\n", ($load1 >> 11), (($load1 & ((1 << 11) - 1)) * 10000) >> 11, ($load2 >> 11), (($load2 & ((1 << 11) - 1)) * 10000) >> 11, ($load3 >> 11), (($load3 & ((1 << 11) - 1)) * 10000) >> 11);
+}

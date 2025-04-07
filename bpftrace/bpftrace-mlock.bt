@@ -1,0 +1,26 @@
+BEGIN
+{
+    printf("Tracing mutex_lock latency... Ctrl-C to end.\n");
+}
+
+k:mutex_lock,
+k:mutex_lock_interruptible
+/$1 == 0 || pid == $1/
+{
+    @lock_start[tid] = nsecs;
+    @lock_addr[tid] = arg0;
+}
+
+kr:mutex_lock
+/($1 == 0 || pid == $1) && @lock_start[tid]/
+{
+    @lock_latency_ns[ksym(@lock_addr[tid]), kstack(5), comm] = hist(nsecs - @lock_start[tid]);
+    delete(@lock_addr[tid]);
+    delete(@lock_start[tid]);
+}
+
+END
+{
+    clear(@lock_addr);
+    clear(@lock_start);
+}

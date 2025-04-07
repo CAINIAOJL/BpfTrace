@@ -1,0 +1,20 @@
+#include <net/sock.h>
+#include <linux/tcp.h>
+#include <linux/ip.h>
+
+BEGIN
+{
+    printf("Tracing TCP resets, Hit Ctrl-C to end.\n");
+    printf("%-8s %-14s %-6s %-14s %-16s\n", "TIME", "LADDR", "LPORT", "RADDR", "RPORT");
+}
+
+k:tcp_v4_send_reset 
+{
+    $skb = (struct sk_buff *)arg1;
+    $tcp = (struct tcphdr *)($skb->head + $skb->transport_header);
+    $ip = (struct iphdr *)($skb->head + $skb->network_header);
+    $dport = ($tcp->dest >> 8) | (($tcp->dest << 8) & 0xff00);
+    $sport = ($tcp->source >> 8) | (($tcp->source << 8) & 0xff00);
+    time("%H:%M:%S  ");
+    printf("%-14s %-6d %-14s %-6d\n", ntop(AF_INET, $ip->daddr), $dport, ntop(AF_INET6, $ip->saddr), $sport);
+}
